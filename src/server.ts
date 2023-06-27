@@ -2,6 +2,7 @@ import express from "express";
 import { PrismaClient } from "@prisma/client";
 import swaggerUi from "swagger-ui-express"
 import swaggerDocument from "../swagger.json"
+import { rmSync } from "fs";
 
 const port = 3000
 const app = express()
@@ -12,7 +13,8 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
 //O GET, assim como SELECT, é usado para buscar dados.
 //BUSCAR FILME, REQUISIÇÃO
-app.get("/movies", async (_, res) => {
+app.get("/movies", async (req, res) => {
+    
     const movies = await prisma.movie.findMany({
         orderBy: { 
             title: "asc"
@@ -22,7 +24,13 @@ app.get("/movies", async (_, res) => {
             languages: true
         }
     })
-    res.json(movies) 
+
+    const moviesQuantity = await prisma.movie.count({
+        orderBy: {
+            id: "asc"
+        }
+    })
+    res.json({movies, moviesQuantity})
 })
 
 //CADASTRAR FILME
@@ -76,7 +84,7 @@ app.put("/movies/:id", async (req, res)=> {
 
         const data = { ...req.body };
         data.release_date = data.release_date ? new Date(data.release_date) : undefined;
-        //pegar os dados do filme que será atualizado e atualiza-lo no prisma
+        
         await prisma.movie.update({
             where: {
                 id
@@ -142,18 +150,14 @@ app.get("/movies/:genreName", async (req, res)=> {
 
 //atualizar informações de genero
 app.put("/genres/:id", async (req, res)=> {
-    //1. Extrai o `id` da rota e o `name` do body da requisição
     const { id } = req.params;
     const { name } = req.body
 
-    //2. Verifica se o `name` foi fornecido. Se não, 
-    //retorna um erro 400(indicar campo obrigatório) ao cliente informando que o nome é obrigatório.
     if(!name){
         res.status(400).send({ message: "o nome do genero é obrigatório"})
     }
 
     try{
-        //3. Tenta encontrar um gênero com o (id fornecido). Se o gênero não for encontrado, retorna um erro 404 ao cliente.
         const genres = await prisma.genre.findUnique({
             where: {
                 id: Number(id)
@@ -163,7 +167,7 @@ app.put("/genres/:id", async (req, res)=> {
         if(!genres){
             res.status(404).send({message: "genero não econtrado"})
         }
-        //4. Verifica se já existe outro gênero com o mesmo nome (ignorando maiúsculas e minúsculas), excluindo o gênero que está sendo atualizado. Se um gênero com o mesmo nome já existir, retorna um erro 409 ao cliente.
+        
         const genreSameName = await prisma.genre.findFirst({
             where: {
                 name: { equals: name, mode:"insensitive" },
@@ -174,16 +178,16 @@ app.put("/genres/:id", async (req, res)=> {
         if(genreSameName){
             return res.status(409).send({message: "Esse nome de genero ja existe"})
         }
-        //5. Se não houver conflito, atualiza o gênero com o novo nome.
+        
         await prisma.genre.update({
             where: { id: Number(id) },
             data: {name}
         })
     }catch(error){
-        //7. Se ocorrer um erro durante qualquer parte do processo, retorna um erro 500 ao cliente.
+        
         return res.status(500).send({message: "erro ao atualizar informações de genero"})
     }
-    //6. Se a atualização for bem-sucedida, retorna o gênero atualizado ao cliente com um status 200.
+    
     res.status(200).send({message: "genero atualizado com sucesso"})
 })
 
