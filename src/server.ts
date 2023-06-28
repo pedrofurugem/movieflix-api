@@ -1,8 +1,8 @@
 import express from "express";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import swaggerUi from "swagger-ui-express"
 import swaggerDocument from "../swagger.json"
-import { rmSync } from "fs";
+import { types } from "util";
 
 const port = 3000
 const app = express()
@@ -14,23 +14,40 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 //O GET, assim como SELECT, é usado para buscar dados.
 //BUSCAR FILME, REQUISIÇÃO
 app.get("/movies", async (req, res) => {
+    const { sort } = req.query;
+    const { language } = req.query
     
-    const movies = await prisma.movie.findMany({
-        orderBy: { 
+    let orderBy = undefined;
+    if(sort === "title"){
+        orderBy = {
             title: "asc"
-        },
-        include: {
-            genres: true,
-            languages: true
-        }
-    })
+        };
+    }else if(sort === "release_date"){
+        orderBy = {
+            release_date: "asc"
+        };
+    }
+    
+    try{
+        const movies = await prisma.movie.findMany({
+            orderBy: orderBy,
+            include: {
+                genres: true,
+                languages: true
+            }
+            
+        })
 
-    const moviesQuantity = await prisma.movie.count({
-        orderBy: {
-            id: "asc"
-        }
-    })
-    res.json({movies, moviesQuantity})
+        const moviesQuantity = await prisma.movie.count({
+            orderBy: {
+                id: "asc"
+            }
+        })
+       
+        res.json({movies, moviesQuantity})
+    }catch(error){
+        return res.status(500).send({message: "Houve um erro ao buscar a lista de filmes"})
+    }
 })
 
 //CADASTRAR FILME
@@ -225,12 +242,16 @@ app.post("/genres", async (req, res)=> {
 app.get("/genres", async (req, res)=> {
     const { name } = req.body
 
-    const genres = await prisma.genre.findMany({
-        where: {
-            name: name
-        }
-    })
-    res.json(genres)
+    try{
+        const genres = await prisma.genre.findMany({
+            where: {
+                name: name
+            }
+        })
+        res.json(genres)
+    }catch(error){
+        return res.status(500).send({message: "Houve um erro ao buscar a lista de generos"})
+    }
 })
 
 //remover generos
