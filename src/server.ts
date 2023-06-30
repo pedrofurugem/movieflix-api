@@ -15,21 +15,20 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 //rota 7 - /movies?language=xx
 //rota 8 - /movies?language=en&sort=releaseDate
 app.get("/movies", async (req, res) => {
-    const { sort, language } = req.query;
-
+    const { sort, language } = req.query
+    
     let orderBy = undefined;
-    if(sort === "movies"){
+    if(sort === "title"){
         orderBy = {
             title: "asc"
         }
-    }
-    else if(sort === "release_date"){
+    }else if(sort === "release_date"){
         orderBy = {
             release_date: "asc"
         }
     }
-    
-    let where = undefined;
+
+    let where = undefined
     if(language){
         where = {
             languages: {
