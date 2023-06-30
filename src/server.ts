@@ -2,7 +2,7 @@ import express from "express";
 import { Prisma, PrismaClient } from "@prisma/client";
 import swaggerUi from "swagger-ui-express"
 import swaggerDocument from "../swagger.json"
-import { types } from "util";
+
 
 const port = 3000
 const app = express()
@@ -11,33 +11,46 @@ const prisma = new PrismaClient()
 app.use(express.json());
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
-//O GET, assim como SELECT, é usado para buscar dados.
-//BUSCAR FILME, REQUISIÇÃO
+//rota 6 - /movies?sort=releaseDate
+//rota 7 - /movies?language=xx
+//rota 8 - /movies?language=en&sort=releaseDate
 app.get("/movies", async (req, res) => {
-    const { sort } = req.query;
-    const { language } = req.query
-    
+    const { sort, language } = req.query;
+
     let orderBy = undefined;
-    if(sort === "title"){
+    if(sort === "movies"){
         orderBy = {
             title: "asc"
-        };
-    }else if(sort === "release_date"){
+        }
+    }
+    else if(sort === "release_date"){
         orderBy = {
             release_date: "asc"
-        };
+        }
+    }
+    
+    let where = undefined;
+    if(language){
+        where = {
+            languages: {
+                name: {
+                    equals: language,
+                    mode: "insensitive"
+                }
+            }
+        }
     }
     
     try{
         const movies = await prisma.movie.findMany({
-            orderBy: orderBy,
+            orderBy,
+            where,
             include: {
                 genres: true,
                 languages: true
-            }
-            
+            },
         })
-
+        
         const moviesQuantity = await prisma.movie.count({
             orderBy: {
                 id: "asc"
@@ -50,7 +63,7 @@ app.get("/movies", async (req, res) => {
     }
 })
 
-//CADASTRAR FILME
+
 app.post("/movies", async (req, res)=> {
     const { title, genre_id, language_id, oscar_count, 
         release_date } = req.body
@@ -83,8 +96,6 @@ app.post("/movies", async (req, res)=> {
     res.status(201).send()
 })
 
-//O PUT, assim como o UPDATE, é usado para alterar dados
-//ALTERAR OS DADOS DE UM FILME JA EXISTENTE
 app.put("/movies/:id", async (req, res)=> {
     const id = Number(req.params.id)
 
@@ -115,7 +126,6 @@ app.put("/movies/:id", async (req, res)=> {
     res.status(200).send()
 })
 
-//O DELETE, assim como o comando do banco com o mesmo nome, é usado para remover dados
 app.delete("/movies/:id", async (req, res)=> {
     const id = Number(req.params.id)
 
@@ -142,7 +152,6 @@ app.delete("/movies/:id", async (req, res)=> {
     res.status(200).send()
 })
 
-//buscar os filmes por gênero
 app.get("/movies/:genreName", async (req, res)=> {
     try{
         const movieFilteredByGenreName = await prisma.movie.findMany({
@@ -165,7 +174,6 @@ app.get("/movies/:genreName", async (req, res)=> {
     }
 });
 
-//atualizar informações de genero
 app.put("/genres/:id", async (req, res)=> {
     const { id } = req.params;
     const { name } = req.body
@@ -208,7 +216,6 @@ app.put("/genres/:id", async (req, res)=> {
     res.status(200).send({message: "genero atualizado com sucesso"})
 })
 
-//adicionado novo genero
 app.post("/genres", async (req, res)=> {
     const { name } = req.body
 
@@ -238,7 +245,6 @@ app.post("/genres", async (req, res)=> {
 
 })
 
-//listar todos os generos
 app.get("/genres", async (req, res)=> {
     const { name } = req.body
 
@@ -254,7 +260,6 @@ app.get("/genres", async (req, res)=> {
     }
 })
 
-//remover generos
 app.delete("/genres/:id", async (req, res)=> {
     const { id } = req.params
 
