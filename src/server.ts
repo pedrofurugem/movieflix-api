@@ -174,22 +174,22 @@ app.get("/movies/:genreName", async (req, res)=> {
 });
 
 app.put("/genres/:id", async (req, res)=> {
-    const { id } = req.params;
+    const { id } = req.params
     const { name } = req.body
 
     if(!name){
-        res.status(400).send({ message: "o nome do genero é obrigatório"})
+        return res.status(400).send({ message: "o nome do genero é obrigatório"})
     }
 
     try{
-        const genres = await prisma.genre.findUnique({
-            where: {
+        const genre = await prisma.genre.findUnique({
+                where: {
                 id: Number(id)
             }
         })
 
-        if(!genres){
-            res.status(404).send({message: "genero não econtrado"})
+        if(!genre){
+            return res.status(404).send({message: "genero não econtrado"})
         }
         
         const genreSameName = await prisma.genre.findFirst({
@@ -207,16 +207,19 @@ app.put("/genres/:id", async (req, res)=> {
             where: { id: Number(id) },
             data: {name}
         })
-    }catch(error){
         
+    }catch(error){
         return res.status(500).send({message: "erro ao atualizar informações de genero"})
     }
-    
     res.status(200).send({message: "genero atualizado com sucesso"})
 })
 
 app.post("/genres", async (req, res)=> {
     const { name } = req.body
+
+    if(!name){
+        return res.status(400).send({ message: "um nome de genero é obrigatório"})
+    }
 
     try{
         const genreName = await prisma.genre.findFirst({
@@ -224,9 +227,7 @@ app.post("/genres", async (req, res)=> {
                 name: { equals: name, mode:"insensitive" }
             }
         })
-
-        //não consegui fazer a verificação se vazio
-
+        
         if(genreName){
             return res.status(409).send({message: "Esse nome de genero ja existe"})
         }
