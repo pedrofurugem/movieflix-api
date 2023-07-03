@@ -27,6 +27,34 @@
                 }
             }
         },
+        "/movies/": {
+            "post": {
+                "tags": ["Movie"],
+                "summary": "Cadastradar novo filme",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MovieInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": ""
+                    },
+                    "409": {
+                        "description": "Ja existe um filme cadastrado com esse título"
+                    },
+                    "500": {
+                        "description": "Erro ao cadastrar o filme"
+                    }
+                }
+                
+            }
+        },
         "/movies/{id}": {
             "put": {
                 "tags": ["Movie"],
@@ -65,7 +93,7 @@
                 }
             },
             "delete": {
-                "tags": ["movies"],
+                "tags": ["Movie"],
                 "summary": "Remover um filme",
                 "parameters": [
                     {
